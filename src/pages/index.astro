@@ -3,76 +3,103 @@ import { getBlogPosts } from "src/utils";
 import BaseLayout from "$layouts/BaseLayout.astro";
 import Header from "$components/Header.astro";
 import Footer from "$components/Footer.astro";
-import BlogEntry from "$components/BlogEntry.astro";
-import BigBlogEntry from "$components/BigBlogEntry.astro";
-import ProseWrapper from "$layouts/ProseWrapper.astro";
+import HeroStory from "$components/HeroStory.astro";
+import TextStory from "$components/TextStory.astro";
+import ImageStory from "$components/ImageStory.astro";
+import StoryCluster from "$components/StoryCluster.astro";
+import Sidebar from "$components/Sidebar.astro";
+import SectionHeader from "$components/SectionHeader.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../config.ts";
 
 const allPosts = await getBlogPosts();
 
-// Topic sections — each shows up to N most recent posts that have that tag.
-// Order matters: this is the homepage order.
+// Topic sections — Intercept/Tablet hybrid layout
 const TOPICS = [
-  { tag: "regulation", label: "Regulation", emoji: "📜", blurb: "Policy, government actions, export controls." },
-  { tag: "companies", label: "Companies", emoji: "🏢", blurb: "Funding, model releases, stock impact, executive moves." },
-  { tag: "papers", label: "Papers", emoji: "📄", blurb: "ArXiv, GitHub trending, Hugging Face models." },
-  { tag: "robotics", label: "Robotics", emoji: "🤖", blurb: "Humanoids, industrial automation, autonomous vehicles, drones." },
-  { tag: "news", label: "News", emoji: "📰", blurb: "General breakthroughs, societal impact, meta-trends." },
+  { tag: "regulation", label: "Regulation" },
+  { tag: "companies", label: "Companies" },
+  { tag: "papers", label: "Papers" },
+  { tag: "robotics", label: "Robotics" },
+  { tag: "news", label: "News" },
 ];
 
-const PER_SECTION = 3;
+const PER_SECTION = 4;
 
-// Find featured (first regulation post) for the hero. Fall back to most recent post.
-const regulationPosts = allPosts.filter((p: any) => (p.data.tags ?? []).includes("regulation"));
-const featured = regulationPosts[0] ?? allPosts[0];
+// Hero: most recent post
+const hero = allPosts[0];
 
-// Posts to hide from topic lists (so the featured post isn't duplicated)
-const featuredId = featured?.id;
+// Top Stories: 6 posts (excluding hero)
+const topStories = allPosts.slice(1, 7);
+const topStoriesLeft = topStories.slice(0, 3); // 3 text-only
+const topStoriesRight = topStories.slice(3, 6); // 3 image cards
 
-function postsForTopic(tag: string) {
-  return allPosts
-    .filter((p: any) => (p.data.tags ?? []).includes(tag) && p.id !== featuredId)
+// Helper: build section cluster (1 featured + 3 secondary, excluding already-shown)
+const excludeIds = new Set([
+  hero?.id,
+  ...topStories.map((p: any) => p.id),
+]);
+
+function clusterFor(tag: string) {
+  const posts = allPosts
+    .filter((p: any) => (p.data.tags ?? []).includes(tag) && !excludeIds.has(p.id))
     .slice(0, PER_SECTION);
+  if (posts.length === 0) return null;
+  return {
+    featured: posts[0],
+    secondary: posts.slice(1, 4),
+  };
+}
+
+// Helper: pass post data with id as slug
+function withSlug(post: any) {
+  return { ...post.data, slug: post.id };
 }
 ---
 
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <Header active="blog" />
-  <main class="max-w-2xl lg:max-w-3xl mx-auto mt-8 px-4">
-    <ProseWrapper class="pb-6">
-      <h1>Latest AI news</h1>
-      <p class="text-base-600 dark:text-base-300 mt-2">
-        Regulation, companies, papers, news, and robotics — updated daily.
+  <main class="max-w-7xl mx-auto mt-8 px-4 md:px-6">
+    <header class="border-b-2 border-base-900 dark:border-base-100 pb-6 mb-10">
+      <h1 class="font-serif text-5xl md:text-6xl lg:text-7xl font-bold leading-none text-base-900 dark:text-base-50 mb-3">
+        {SITE_TITLE}
+      </h1>
+      <p class="font-serif text-lg md:text-xl text-base-700 dark:text-base-300 leading-snug">
+        Daily AI news — regulation, companies, papers, robotics, breakthroughs. Updated daily.
       </p>
-    </ProseWrapper>
+    </header>
 
-    {featured && <BigBlogEntry {...featured.data} slug={featured.id} />}
+    {hero && <HeroStory {...withSlug(hero)} />}
 
-    <div class="mt-16 space-y-20">
-      {
-        TOPICS.map(({ tag, label, emoji, blurb }) => {
-          const sectionPosts = postsForTopic(tag);
-          if (sectionPosts.length === 0) return null;
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12">
+      <div>
+        {topStories.length > 0 && (
+          <section class="mb-16">
+            <SectionHeader label="Top Stories" slug="news" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                {topStoriesLeft.map((post: any) => <TextStory {...withSlug(post)} />)}
+              </div>
+              <div class="space-y-6">
+                {topStoriesRight.map((post: any) => <ImageStory {...withSlug(post)} />)}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {TOPICS.map(({ tag, label }) => {
+          const cluster = clusterFor(tag);
+          if (!cluster) return null;
           return (
-            <section>
-              <div class="flex items-baseline justify-between border-b border-base-200 dark:border-base-700 pb-2 mb-6">
-                <h2 class="text-xl font-semibold">
-                  <span class="mr-2">{emoji}</span>{label}
-                </h2>
-                <a href={`/tags/${tag}/`} class="text-xs text-accent-600 dark:text-accent-400 hover:underline">
-                  See all →
-                </a>
-              </div>
-              <p class="text-sm text-base-600 dark:text-base-400 -mt-3 mb-6">{blurb}</p>
-              <div class="space-y-12">
-                {sectionPosts.map((post: any) => (
-                  <BlogEntry {...post.data} slug={post.id} />
-                ))}
-              </div>
-            </section>
+            <StoryCluster
+              label={label}
+              slug={tag}
+              featured={cluster.featured ? withSlug(cluster.featured) : null}
+              secondary={cluster.secondary.map((p: any) => withSlug(p))}
+            />
           );
-        })
-      }
+        })}
+      </div>
+
+      <Sidebar />
     </div>
   </main>
 

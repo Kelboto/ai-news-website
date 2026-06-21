@@ -1,0 +1,47 @@
+---
+import TextStory from "./TextStory.astro";
+import ImageStory from "./ImageStory.astro";
+import SectionHeader from "./SectionHeader.astro";
+
+const { label, slug, featured, secondary } = Astro.props;
+// featured = single post object (large image+headline+lede)
+// secondary = array of 3 post objects (text-only)
+---
+
+<section class="mb-16">
+  <SectionHeader label={label} slug={slug} count={(secondary?.length || 0) + (featured ? 1 : 0)} />
+
+  {featured && (
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 pb-8 border-b border-base-200 dark:border-base-800">
+      <ImageStory {...featured} />
+      <div class="flex flex-col justify-center">
+        {featured.tags?.[0] && (
+          <span class="text-[10px] font-bold uppercase tracking-widest text-accent-600 dark:text-accent-400 mb-2">
+            Featured
+          </span>
+        )}
+        <h3 class="font-serif text-2xl md:text-3xl font-bold leading-tight text-base-900 dark:text-base-50 mb-3">
+          <a href={`/posts/${featured.slug}/`} class="hover:text-accent-700 dark:hover:text-accent-300 transition-colors">
+            {featured.title}
+          </a>
+        </h3>
+        {featured.description && (
+          <p class="font-serif text-base leading-snug text-base-700 dark:text-base-300 mb-3">
+            {featured.description}
+          </p>
+        )}
+        <div class="flex items-center gap-x-2 text-xs text-base-600 dark:text-base-400">
+          {featured.author && <span class="font-semibold text-base-800 dark:text-base-200">{featured.author}</span>}
+          {featured.author && featured.pubDate && <span>·</span>}
+          {featured.pubDate && <time datetime={featured.pubDate}>{featured.pubDate}</time>}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {secondary && secondary.length > 0 && (
+    <div class="space-y-0">
+      {secondary.map((post: any) => <TextStory {...post} />)}
+    </div>
+  )}
+</section>

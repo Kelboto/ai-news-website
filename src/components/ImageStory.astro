@@ -1,0 +1,46 @@
+---
+import { BASE, SHOW_IMAGES } from "../config.ts";
+import FormattedDate from "./FormattedDate.astro";
+import HeroImage from "./HeroImage.astro";
+
+const { title, description, pubDate, slug, tags, heroImage, noImage, author } =
+  Astro.props;
+
+const primaryTag = tags?.[0];
+---
+
+<article class="group flex flex-col gap-3">
+  {
+    noImage || !SHOW_IMAGES || !heroImage ? null : (
+      <a href={BASE + `/posts/${slug}/`} class="block overflow-hidden">
+        <div class="relative aspect-[16/10] w-full">
+          <HeroImage image={heroImage} />
+        </div>
+      </a>
+    )
+  }
+  <div>
+    {primaryTag && (
+      <a
+        href={BASE + `/sections/${primaryTag}/`}
+        class="inline-block text-[10px] font-bold uppercase tracking-widest text-accent-600 dark:text-accent-400 mb-1.5 hover:text-accent-700 dark:hover:text-accent-300 transition-colors"
+      >
+        {primaryTag}
+      </a>
+    )}
+    <h3 class="font-serif text-lg md:text-xl font-bold leading-snug text-base-900 dark:text-base-50 mb-1">
+      <a href={BASE + `/posts/${slug}/`} class="hover:text-accent-700 dark:hover:text-accent-300 transition-colors">
+        {title}
+      </a>
+    </h3>
+    <div class="flex items-center gap-x-2 text-xs text-base-600 dark:text-base-400">
+      {author && <span class="font-semibold text-base-800 dark:text-base-200">{author}</span>}
+      {author && pubDate && <span>·</span>}
+      {pubDate && (
+        <time datetime={pubDate}>
+          <FormattedDate date={pubDate} />
+        </time>
+      )}
+    </div>
+  </div>
+</article>

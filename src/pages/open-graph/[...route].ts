@@ -2,6 +2,7 @@ import { OGImageRoute } from "astro-og-canvas";
 import { ACCENT_COLOR, BASE_COLOR, SITE_DESCRIPTION, SITE_TITLE } from "../../config.ts";
 import { getBlogPosts } from "src/utils";
 import colors from "tailwindcss/colors";
+import { BURNT_ORANGE } from "../../colors.ts";
 
 const posts = await getBlogPosts();
 
@@ -33,7 +34,7 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
-const accentColor = colors[ACCENT_COLOR];
+const accentColor = ACCENT_COLOR === "burnt" ? BURNT_ORANGE : colors[ACCENT_COLOR];
 const baseColor = colors[BASE_COLOR];
 
 export const { getStaticPaths, GET } = OGImageRoute({

@@ -1,0 +1,21 @@
+---
+import { BASE } from "../config.ts";
+
+const { label, slug, count } = Astro.props;
+---
+
+<header class="flex items-baseline justify-between border-b-2 border-base-900 dark:border-base-100 pb-2 mb-6">
+  <h2 class="font-serif text-2xl md:text-3xl font-bold uppercase tracking-tight text-base-900 dark:text-base-50">
+    <a href={BASE + `/sections/${slug}/`} class="hover:text-accent-700 dark:hover:text-accent-300 transition-colors">
+      {label}
+    </a>
+  </h2>
+  <a
+    href={BASE + `/sections/${slug}/`}
+    class="text-xs font-mono uppercase tracking-wider text-base-600 dark:text-base-400 hover:text-accent-600 dark:hover:text-accent-400 transition-colors flex items-center gap-1"
+  >
+    <span>/sections/{slug}/</span>
+    {count && <span class="text-base-500">({count})</span>}
+    <span aria-hidden="true">→</span>
+  </a>
+</header>
