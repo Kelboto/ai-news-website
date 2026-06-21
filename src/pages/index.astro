@@ -1,14 +1,80 @@
 ---
-import { POSTS_PER_PAGE } from "../config.ts";
 import { getBlogPosts } from "src/utils";
-import PostList from "$layouts/PostList.astro";
+import BaseLayout from "$layouts/BaseLayout.astro";
+import Header from "$components/Header.astro";
+import Footer from "$components/Footer.astro";
+import BlogEntry from "$components/BlogEntry.astro";
+import BigBlogEntry from "$components/BigBlogEntry.astro";
+import ProseWrapper from "$layouts/ProseWrapper.astro";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../config.ts";
 
-const posts = (await getBlogPosts()).splice(0, POSTS_PER_PAGE);
+const allPosts = await getBlogPosts();
 
-const total = Math.ceil((await getBlogPosts()).length / POSTS_PER_PAGE);
+// Topic sections — each shows up to N most recent posts that have that tag.
+// Order matters: this is the homepage order.
+const TOPICS = [
+  { tag: "regulation", label: "Regulation", emoji: "📜", blurb: "Policy, government actions, export controls." },
+  { tag: "companies", label: "Companies", emoji: "🏢", blurb: "Funding, model releases, stock impact, executive moves." },
+  { tag: "papers", label: "Papers", emoji: "📄", blurb: "ArXiv, GitHub trending, Hugging Face models." },
+  { tag: "robotics", label: "Robotics", emoji: "🤖", blurb: "Humanoids, industrial automation, autonomous vehicles, drones." },
+  { tag: "news", label: "News", emoji: "📰", blurb: "General breakthroughs, societal impact, meta-trends." },
+];
+
+const PER_SECTION = 3;
+
+// Find featured (first regulation post) for the hero. Fall back to most recent post.
+const regulationPosts = allPosts.filter((p: any) => (p.data.tags ?? []).includes("regulation"));
+const featured = regulationPosts[0] ?? allPosts[0];
+
+// Posts to hide from topic lists (so the featured post isn't duplicated)
+const featuredId = featured?.id;
+
+function postsForTopic(tag: string) {
+  return allPosts
+    .filter((p: any) => (p.data.tags ?? []).includes(tag) && p.id !== featuredId)
+    .slice(0, PER_SECTION);
+}
 ---
 
-<PostList {posts} totalPages={total} currentPage={1} showFeatured>
-  <h1>Latest AI news</h1>
-  <p class="text-base-600 dark:text-base-300 mt-2">Regulation, companies, papers, and breakthroughs — updated daily.</p>
-</PostList>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <Header active="blog" />
+  <main class="max-w-2xl lg:max-w-3xl mx-auto mt-8 px-4">
+    <ProseWrapper class="pb-6">
+      <h1>Latest AI news</h1>
+      <p class="text-base-600 dark:text-base-300 mt-2">
+        Regulation, companies, papers, news, and robotics — updated daily.
+      </p>
+    </ProseWrapper>
+
+    {featured && <BigBlogEntry {...featured.data} slug={featured.id} />}
+
+    <div class="mt-16 space-y-20">
+      {
+        TOPICS.map(({ tag, label, emoji, blurb }) => {
+          const sectionPosts = postsForTopic(tag);
+          if (sectionPosts.length === 0) return null;
+          return (
+            <section>
+              <div class="flex items-baseline justify-between border-b border-base-200 dark:border-base-700 pb-2 mb-6">
+                <h2 class="text-xl font-semibold">
+                  <span class="mr-2">{emoji}</span>{label}
+                </h2>
+                <a href={`/tags/${tag}/`} class="text-xs text-accent-600 dark:text-accent-400 hover:underline">
+                  See all →
+                </a>
+              </div>
+              <p class="text-sm text-base-600 dark:text-base-400 -mt-3 mb-6">{blurb}</p>
+              <div class="space-y-12">
+                {sectionPosts.map((post: any) => (
+                  <BlogEntry {...post.data} slug={post.id} />
+                ))}
+              </div>
+            </section>
+          );
+        })
+      }
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
